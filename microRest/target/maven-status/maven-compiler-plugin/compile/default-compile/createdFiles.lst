@@ -1,0 +1,5 @@
+com/smatiz/microrest/Server.class
+com/smatiz/microrest/struct_page.class
+com/smatiz/microrest/Server$ServiceThread.class
+com/smatiz/microrest/DBProvider.class
+com/smatiz/microrest/MicroServer.class
