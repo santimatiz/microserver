@@ -14,6 +14,6 @@ HOW INSTALL
 CONFIGURE
 - you can configure the port by changing the row 'port' in table config
 
-THAT ALL!!!
+THATS ALL!!!
 
 Enjoy.
