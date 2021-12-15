@@ -1,0 +1,31 @@
+CREATE SCHEMA microrest
+    AUTHORIZATION postgres;
+
+CREATE TABLE microrest.config
+(
+    conf character varying(30) COLLATE pg_catalog."default" NOT NULL,
+    value character varying(20) COLLATE pg_catalog."default" NOT NULL,
+    CONSTRAINT config_pkey PRIMARY KEY (conf)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE microrest.config
+    OWNER to postgres;
+
+
+
+CREATE TABLE microrest.restapi
+(
+    id_restapi bigint NOT NULL,
+    name character varying COLLATE pg_catalog."default" NOT NULL,
+    path character varying COLLATE pg_catalog."default",
+    query character varying COLLATE pg_catalog."default",
+    action character varying(20) COLLATE pg_catalog."default",
+    CONSTRAINT restapi_pkey PRIMARY KEY (id_restapi)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE microrest.restapi
+    OWNER to postgres;
