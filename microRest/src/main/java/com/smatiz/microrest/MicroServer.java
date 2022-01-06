@@ -10,20 +10,20 @@ package com.smatiz.microrest;
  * @author smatiz
  */
 public class MicroServer {
-    final static String version = "0.1";
+    final static String version = "0.3 build 20220102";
     
    
    public MicroServer() {    
    }
    
    
-    public static void main(String[] args) {     
-        System.out.println("MicroServer "+version);
+    public static void main(String[] args) {  
+        System.out.println("MicroServer - REST API "+version);
         System.out.println("Author : Santiago Matiz V.");
         System.out.println("https://www.intelyclick.com/microserver");
         
         var url_db = "";
-        if (args.length>0) {            
+        if (args.length>0) {                    
             Server server = new Server(args[0]);
             server.run_server();
         } else {

@@ -44,14 +44,16 @@ public final class struct_page {
         if (step_parse==1) {
           
             var header = info.split(":");
-            if (header.length>0)
+            if (header.length>1)
                 headers.put(header[0], header[1]);
         }
         
-        if (info.contains("GET")) {  action="GET"; parsePath(3, info);}
-        if (info.contains("POST")){   action="POST"; parsePath(4, info);}
-        if (info.contains("PUT")) {   action="PUT"; parsePath(3, info);}     
-
+        if (info.length()>2) {
+            if (info.trim().substring(0,3).equals("GET"))     {  action="GET"; parsePath(3, info);}
+            if (info.contains("OPTIONS")) {  action="OPTIONS"; parsePath(7, info);}
+            if (info.contains("POST"))    {   action="POST"; parsePath(4, info);}
+            if (info.contains("PUT"))     {   action="PUT"; parsePath(3, info);}     
+        }            
     }
     
     
