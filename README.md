@@ -7,6 +7,7 @@ I'ts a small server REST-API made in JAVA than call query or function in POSTGRE
 
 HOW INSTALL
 - Create schema 'microrest' in postgresql database
+- or table microrest_restapi in Mysql
 - Create table  'restapi' see directory sql
 - copy MicroServer.jar of dir 'build_jar'
 - run java jar : java -jar MicroServer <path configuration file>
