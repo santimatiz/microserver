@@ -5,6 +5,7 @@
  */
 package com.smatiz.microrest;
 
+import com.smatiz.microrest.Debug.Levels;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,7 +26,14 @@ public class Config {
     private String connectionUrl = "";
     private String db_user="";
     private String db_password;
-
+    private boolean ssl=false;
+    private String TrustStore="/programas/certs/e-compra.co.p12";
+    private String TrustStorePassword="Sonycdr74";
+    private String KeyStorePassword="Sonycdr74";
+    private String KeyStore="/programas/certs/e-compra.co.keystore";
+    private String log = "";
+    
+    
     Config(String filename) {
         try {
             configInput = new FileInputStream(filename);
@@ -36,11 +44,16 @@ public class Config {
             port = new Integer(config.getProperty("port"));
             time_out = new Integer(config.getProperty("timeout"));
             
+            ssl = config.getProperty("ssl").trim().equals("true");
+            TrustStore = config.getProperty("TrustStore").trim();
+            TrustStorePassword = config.getProperty("TrustStorePassword").trim();
+            KeyStorePassword = config.getProperty("KeyStorePassword").trim();
+            KeyStore = config.getProperty("KeyStore").trim();
+            log = config.getProperty("log").trim();
             
             
         } catch (IOException e) {
-            new Debug().out("Error loading configuration data :"+e.getMessage());
-            
+            Debug.out("Error loading configuration data :"+e.getMessage(),Levels.ERROR);            
         }
     }
 
@@ -126,6 +139,90 @@ public class Config {
      */
     public void setTime_out(int time_out) {
         this.time_out = time_out;
+    }
+
+    /**
+     * @return the ssl
+     */
+    public boolean isSsl() {
+        return ssl;
+    }
+
+    /**
+     * @param ssl the ssl to set
+     */
+    public void setSsl(boolean ssl) {
+        this.ssl = ssl;
+    }
+
+    /**
+     * @return the TrustStore
+     */
+    public String getTrustStore() {
+        return TrustStore;
+    }
+
+    /**
+     * @param TrustStore the TrustStore to set
+     */
+    public void setTrustStore(String TrustStore) {
+        this.TrustStore = TrustStore;
+    }
+
+    /**
+     * @return the TrustStorePassword
+     */
+    public String getTrustStorePassword() {
+        return TrustStorePassword;
+    }
+
+    /**
+     * @param TrustStorePassword the TrustStorePassword to set
+     */
+    public void setTrustStorePassword(String TrustStorePassword) {
+        this.TrustStorePassword = TrustStorePassword;
+    }
+
+    /**
+     * @return the KeyStorePassword
+     */
+    public String getKeyStorePassword() {
+        return KeyStorePassword;
+    }
+
+    /**
+     * @param KeyStorePassword the KeyStorePassword to set
+     */
+    public void setKeyStorePassword(String KeyStorePassword) {
+        this.KeyStorePassword = KeyStorePassword;
+    }
+
+    /**
+     * @return the KeyStore
+     */
+    public String getKeyStore() {
+        return KeyStore;
+    }
+
+    /**
+     * @param KeyStore the KeyStore to set
+     */
+    public void setKeyStore(String KeyStore) {
+        this.KeyStore = KeyStore;
+    }
+
+    /**
+     * @return the log
+     */
+    public String getLog() {
+        return log;
+    }
+
+    /**
+     * @param log the log to set
+     */
+    public void setLog(String log) {
+        this.log = log;
     }
 
 }

@@ -1,5 +1,10 @@
-com/smatiz/microrest/Server.class
+com/smatiz/microrest/DBProvider$type_db.class
+com/smatiz/microrest/Debug.class
 com/smatiz/microrest/struct_page.class
+com/smatiz/microrest/Config.class
+com/smatiz/microrest/Debug$Levels.class
 com/smatiz/microrest/Server$ServiceThread.class
-com/smatiz/microrest/DBProvider.class
 com/smatiz/microrest/MicroServer.class
+com/smatiz/microrest/Server.class
+com/smatiz/microrest/struct_response.class
+com/smatiz/microrest/DBProvider.class

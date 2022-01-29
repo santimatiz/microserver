@@ -10,7 +10,7 @@ package com.smatiz.microrest;
  * @author smatiz
  */
 public class MicroServer {
-    final static String version = "0.3 build 20220102";
+    final static String version = "0.3.1 build 20220128";
     
    
    public MicroServer() {    

@@ -5,14 +5,22 @@
  */
 package com.smatiz.microrest;
 
+import com.smatiz.microrest.Debug.Levels;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.sql.Connection;
+import java.nio.file.Paths;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,6 +28,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.SSLSocket;
+import org.apache.http.ssl.SSLContexts;
+
 
 /**
  *
@@ -30,27 +44,53 @@ import java.util.logging.Logger;
 */
 public class Server {
 
-    private ServerSocket serverSocket;    
+    private ServerSocket serverSocket;   
+    private SSLServerSocket ssl_serverSocket;
+    
     private static final boolean ServerOn= true;
     List<ServiceThread> lhilos = new ArrayList();
     Config config;
 
     public Server(String path) {
-        
+
         config = new Config(path);
         DBProvider db = new DBProvider(config);
         if (db.isError()) {
-            System.out.println("There are an error with DB configuration ");
+            new Debug(config.getLog()).out("There are an error with DB configuration ",Levels.ERROR);            
         }
         db.disconect();
 
         try {
             //https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/net/ServerSocket.html
             //new ServerSocket(9090, 0, InetAddress.getLoopbackAddress());
-            serverSocket = new ServerSocket(config.getPort(),3);
-            System.out.println("Listening port " + config.getPort());
+
+            if (config.isSsl()) {
+
+                SSLContext c = SSLContexts
+                        .custom()
+                        .loadKeyMaterial(Paths.get(
+                                config.getKeyStore()
+                        ).toFile()
+                                , config.getKeyStorePassword().toCharArray()
+                                , config.getKeyStorePassword().toCharArray())
+                        .loadTrustMaterial(Paths.get(config.getTrustStore()).toFile()
+                                , config.getTrustStorePassword().toCharArray())
+                        .build();
+
+                SSLServerSocketFactory sf = c.getServerSocketFactory();
+                ssl_serverSocket = (SSLServerSocket) sf.createServerSocket(config.getPort());
+
+            } else {
+                serverSocket = new ServerSocket(config.getPort(), 3); // Without SSL
+            }
+            new Debug(config.getLog()).out("Listening port " + config.getPort() + " ,SSL enable " + config.isSsl(),Levels.INFO);
+            
         } catch (IOException ex) {
+            new Debug(config.getLog()).out( ex.getMessage(),Levels.ERROR);            
             Logger.getLogger(MicroServer.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (NoSuchAlgorithmException | KeyStoreException | UnrecoverableKeyException | CertificateException | KeyManagementException ex) {
+            new Debug(config.getLog()).out( ex.getMessage(),Levels.ERROR);            
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
 
     }
@@ -59,11 +99,18 @@ public class Server {
 
     
     public void run_server() {
+        ServiceThread cliThread = null;
+        
         while (ServerOn) {
-            try {
-                Socket clientSocket = serverSocket.accept();
-                ServiceThread cliThread = new ServiceThread(config.getConnectionUrl(), clientSocket);
-
+            try {               
+                  if (config.isSsl()) {                  
+                    SSLSocket clientSocket = (SSLSocket) ssl_serverSocket.accept();
+                    cliThread = new ServiceThread(config.getConnectionUrl(), clientSocket);
+                } else {
+                    Socket clientSocket = serverSocket.accept();
+                    cliThread = new ServiceThread(config.getConnectionUrl(), clientSocket);
+                }
+                
                 lhilos.add(cliThread);
                 cliThread.start();
                 for (int i = 0; i < lhilos.size(); i++) {
@@ -79,9 +126,11 @@ public class Server {
                     }
 
                 }
-                System.out.println("Thread  :" + lhilos.size());
+                new Debug(config.getLog()).out("Thread  :" + lhilos.size(),Levels.VERBOSE);            
+                
 
             } catch (IOException ioe) {
+                new Debug(config.getLog()).out( ioe.getMessage(),Levels.ERROR);            
                 System.out.println("Exception found on accept. Ignoring. Stack Trace :");
             } 
         }
@@ -92,43 +141,61 @@ public class Server {
 
         private struct_page page = new struct_page();
         long start_time = System.currentTimeMillis();
+        
         Socket myClientSocket;
+        SSLSocket SSLmyClientSocket;
+        
         boolean m_bRunThread = true;
         private String url_db = "";
 
-        /*
-        public ServiceThread(String url) {
-            super();
-            this.url_db = url;
-
-        }
-        */
-
-        ServiceThread(String url, Socket s) {
+        
+         ServiceThread(String url, Socket s) {
             super();
             myClientSocket = s;
+            this.url_db = url;
+        }
+        
+     
+        ServiceThread(String url, SSLSocket s) {
+            super();
+            SSLmyClientSocket = s;
             this.url_db = url;
         }
 
         public void run() {
             BufferedReader in = null;
             PrintWriter out = null;
-            System.out.println(
-                    "Accepted Client Address - " + myClientSocket.getInetAddress().getHostName());
+            
+            // SSL
+            InputStream is = null; 
+            OutputStream os = null;
+            byte[] buffer = new byte[1024];
+            int bytesRead = 0;
+            
             try {
-                 myClientSocket.setSoTimeout(MAX_PRIORITY);
+                 
 
-                in = new BufferedReader(
-                        new InputStreamReader(myClientSocket.getInputStream()));
+                if (config.isSsl()) {
+                    new Debug(config.getLog()).out( "Accepted Client Address - " + SSLmyClientSocket.getInetAddress().getHostName(),Levels.INFO);                          
+                    SSLmyClientSocket.setSoTimeout(6000);                    
+                    out = new PrintWriter(new OutputStreamWriter(SSLmyClientSocket.getOutputStream()));                    
+                    is =  SSLmyClientSocket.getInputStream();
+                                                         
+                } else {
+                    new Debug(config.getLog()).out( "Accepted Client Address - " + SSLmyClientSocket.getInetAddress().getHostName(),Levels.INFO);                                              
+                    myClientSocket.setSoTimeout(MAX_PRIORITY);
+                    in = new BufferedReader(
+                            new InputStreamReader(myClientSocket.getInputStream()));
 
-                out = new PrintWriter(
-                        new OutputStreamWriter(myClientSocket.getOutputStream()));
+                    out = new PrintWriter(
+                            new OutputStreamWriter(myClientSocket.getOutputStream()));
+                }
 
                 while (m_bRunThread) {
                     //System.out.println("While running...");
                     long time_elapsed = System.currentTimeMillis();
                     if ((time_elapsed - start_time) > config.getTime_out()) {
-                        System.out.println("Process time limit , stopping...");
+                        new Debug(config.getLog()).out( "Process time limit , stopping..." + SSLmyClientSocket.getInetAddress().getHostName(),Levels.VERBOSE);                                                  
                         m_bRunThread = false;
                         this.stop();
 
@@ -136,12 +203,37 @@ public class Server {
 
                     String clientCommand = "";
                     try {                         
-                        clientCommand = in.readLine();
+                     
+                        if (config.isSsl()) {
+                            
+                          
+                                bytesRead = is.read(buffer);                                 
+                                if (bytesRead == -1) {
+                                    m_bRunThread = false;
+                                    clientCommand = "";
+                                }  else {
+                                    clientCommand = new String(buffer, 0, bytesRead);
+                                    
+                                    if (buffer[bytesRead-1]==10) 
+                                        if (buffer[bytesRead-2]==13) 
+                                            if (buffer[bytesRead-3]==10) 
+                                                if (buffer[bytesRead-4]==13) {
+                                                    new Debug(config.getLog()).out( " Detect end communication !!!",Levels.VERBOSE);                                                                                                      
+                                                    m_bRunThread = false;
+                                                }                                    
+                                    
+                                }
+                                new Debug(config.getLog()).out( "Readed " + clientCommand.length() + " bytes...",Levels.VERBOSE);                                                                                                      
+                        } else {
+                            clientCommand = in.readLine();
+
+                        }
+                            
                         
 
                     } catch (Exception ex) {
                         System.out.println(ex.getMessage());
-                        System.out.println("Time Out, Don't detect \\n ");
+                        new Debug(config.getLog()).out( "Time Out, Don't detect \\n ",Levels.VERBOSE);                                                                                                                              
                         m_bRunThread = false;
 
                     }
@@ -153,17 +245,17 @@ public class Server {
                             if (page.getAction().equals("OPTIONS")) {
                                 ManageOptions(out);
                             } else {
-                                System.out.println("End of client request");
+                                new Debug(config.getLog()).out( "End of client request",Levels.VERBOSE);                                                                                                                                      
                                 m_bRunThread = false;
                             }
                         }
                        
                         
-                        getPage().parse(clientCommand);
-                        System.out.println("Client Says :" + clientCommand);
+                        getPage().parse(clientCommand);      
+                        new Debug(config.getLog()).out( "Client Says :" + clientCommand,Levels.VERBOSE);                                                                                                                                                              
                        
                     } // if command!=null
-                } // While
+                }    // While
 
                 
                 /***
@@ -180,18 +272,18 @@ public class Server {
                                       
                     switch (return_info) {
                         case  "404" : {
-                            out.println(response("400 Bad Request", "Resorce not found!")); // Alwais is OK Send response to client
-                            System.out.println("404");
+                            out.println(response("400 Bad Request", "Resorce not found!")); 
+                            new Debug(config.getLog()).out( "404" ,Levels.VERBOSE);                             
                             break;
                         } 
                          case  "500" : {
                             out.println(response("500 Internal Server Error", "Internal Server Error")); // Alwais is OK Send response to client
-                            System.out.println("500");
+                            new Debug(config.getLog()).out( "500" ,Levels.VERBOSE);                             
                             break;
                         } 
                         default : {
-                            out.println(response("200 OK", return_info));                            
-                            System.out.println("200");
+                            out.println(response("200 OK", return_info));    
+                            new Debug(config.getLog()).out( "200" ,Levels.VERBOSE);                             
                             break; // Alwais is OK Send response to client
                         }
                     }
@@ -199,12 +291,14 @@ public class Server {
                     out.flush();
 
                 } catch (SQLException ex) {
-                    System.out.println("Error in process query information ");
+                    new Debug(config.getLog()).out( "Error in process query information "+ex.getMessage() ,Levels.ERROR);                    
                     Logger.getLogger(ServiceThread.class.getName()).log(Level.SEVERE, null, ex);
                 }
 
             } catch (IOException ex) {
+                    new Debug(config.getLog()).out(ex.getMessage() ,Levels.ERROR);                    
                 Logger.getLogger(MicroServer.class.getName()).log(Level.SEVERE, null, ex);
+                
             } finally {
                 try {
                     // out.println(response()); // Send response to client
@@ -215,12 +309,12 @@ public class Server {
                     if (out != null) {
                         out.close();
                     }
-                    myClientSocket.close();
-                    System.out.println("end communication");
-                    System.out.println(getPage());
+                     if (config.isSsl()) { SSLmyClientSocket.close(); } else { myClientSocket.close();  }                     
+                         new Debug(config.getLog()).out( "End comunication " ,Levels.INFO);    
+                         new Debug(config.getLog()).out( getPage().toString() ,Levels.VERBOSE);                      
                 } catch (IOException ex) {
                     Logger.getLogger(MicroServer.class.getName()).log(Level.SEVERE, null, ex);
-                    System.out.println("Error in process query information ");
+                    new Debug(config.getLog()).out( "Error in process query information "+ex.getMessage() ,Levels.ERROR);                                        
                 }
             }
         }
@@ -246,7 +340,7 @@ public class Server {
             out.println(response("200 OK", return_info));  
             out.flush();
             System.out.println("ATENTION !!!  : In this moment we are not compatible with OPTIONS  ");
-            System.out.println("PLease remove <\"Access-Control_Allow_Origin\": > of client Header ");
+            System.out.println("Please remove <\"Access-Control_Allow_Origin\": > of client Header ");
             
         }
         
@@ -286,8 +380,8 @@ public class Server {
            response.setQuery(response.getQuery().replaceAll("body", "'" + page.getBody() +"'")); // Body           
            response.setQuery(response.getQuery().replaceAll("%27", "'")); // Pone las comillas simples
            
-           new Debug().out("Query : " + response.getQuery());
-           System.out.println("Query : " + response.getQuery());
+           new Debug(config.getLog()).out("Query : " + response.getQuery(),Levels.VERBOSE);
+           
             
             if (response.getQuery().equals("")) { return "404";}
             String result = con_provider.excecuteQuery(response.getQuery());

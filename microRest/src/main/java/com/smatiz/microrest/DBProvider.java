@@ -90,7 +90,8 @@ public class DBProvider {
              if (rs.next()) result= rs.getString(1);
     }   catch (SQLException ex) {
             Logger.getLogger(DBProvider.class.getName()).log(Level.SEVERE, null, ex);
-            System.out.println("ERROR_EXE_QUERY : "+query);
+            new Debug(config.getLog()).out("ERROR_EXE_QUERY : : " + ex.getMessage(),Debug.Levels.ERROR);
+            
         }
         return result;
     }
@@ -105,15 +106,16 @@ public class DBProvider {
         String sql = "";
         
         int final_pos = page.getPath().substring(1, page.getPath().length()).indexOf("/")+2;
-        var path =page.getPath().substring(0, final_pos);        
-        System.out.println("Path :"+path);
+        var path =page.getPath().substring(0, final_pos);       
+        
+        new Debug(config.getLog()).out("Path :"+path,Debug.Levels.VERBOSE);         
         
         if (tipo_base_datos.compareTo(type_db.mysql) == 0 ) {
             sql = "SELECT query,path FROM microrest_restapi WHERE path = '"+page.getPath()+"' AND action='"+page.getAction()+"'";
        } else {
            sql = "SELECT query,path FROM microrest.restapi WHERE path = '"+page.getPath()+"' AND action='"+page.getAction()+"'";
        }
-        System.out.println("Sql :"+sql);
+        new Debug(config.getLog()).out("Sql : " + sql,Debug.Levels.VERBOSE);        
         String result = "";
         try (
                 Statement st  = con.createStatement();
