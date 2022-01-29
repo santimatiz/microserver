@@ -1,5 +1,13 @@
 con_url = jdbc:postgresql://localhost/microrest
 db_user = dba
 db_password = dba
-port = 8089
+port = 8443
 timeout = 1000
+
+ssl=true
+TrustStore=/Volumes/Disco2/desarrollo/MicroRest/cers/e-compra.co.p12
+TrustStorePassword=Sonycdr74
+KeyStorePassword=Sonycdr74
+KeyStore=/Volumes/Disco2/desarrollo/MicroRest/cers/e-compra.co.keystore
+
+logs=debug
