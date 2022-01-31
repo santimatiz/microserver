@@ -6,8 +6,8 @@ timeout = 1000
 
 ssl=true
 TrustStore=/Volumes/Disco2/desarrollo/MicroRest/cers/e-compra.co.p12
-TrustStorePassword=Sonycdr74
-KeyStorePassword=Sonycdr74
+TrustStorePassword=changeIt
+KeyStorePassword=changeIt
 KeyStore=/Volumes/Disco2/desarrollo/MicroRest/cers/e-compra.co.keystore
 
-logs=debug
+log=ERROR
