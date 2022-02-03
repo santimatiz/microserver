@@ -182,7 +182,7 @@ public class Server {
                     is =  SSLmyClientSocket.getInputStream();
                                                          
                 } else {
-                    new Debug(config.getLog()).out( "Accepted Client Address - " + SSLmyClientSocket.getInetAddress().getHostName(),Levels.INFO);                                              
+                    new Debug(config.getLog()).out( "Accepted Client Address - " + myClientSocket.getInetAddress().getHostName(),Levels.INFO);                                              
                     myClientSocket.setSoTimeout(MAX_PRIORITY);
                     in = new BufferedReader(
                             new InputStreamReader(myClientSocket.getInputStream()));
@@ -195,45 +195,42 @@ public class Server {
                     //System.out.println("While running...");
                     long time_elapsed = System.currentTimeMillis();
                     if ((time_elapsed - start_time) > config.getTime_out()) {
-                        new Debug(config.getLog()).out( "Process time limit , stopping..." + SSLmyClientSocket.getInetAddress().getHostName(),Levels.VERBOSE);                                                  
+                        new Debug(config.getLog()).out( "Process time limit , stopping...",Levels.VERBOSE);                                                  
                         m_bRunThread = false;
                         this.stop();
 
                     }
 
                     String clientCommand = "";
-                    try {                         
-                     
+                    try {
+
                         if (config.isSsl()) {
-                            
-                          
-                                bytesRead = is.read(buffer);                                 
-                                if (bytesRead == -1) {
+
+                            bytesRead = is.read(buffer);
+                            if (bytesRead == -1) {
+                                m_bRunThread = false;
+                                clientCommand = "";
+                            } else {
+                                clientCommand = new String(buffer, 0, bytesRead);
+
+                                if ((buffer[bytesRead - 1] == 10)
+                                        && (buffer[bytesRead - 2] == 13)
+                                        && (buffer[bytesRead - 3] == 10)
+                                        && (buffer[bytesRead - 4] == 13)) {
+                                    new Debug(config.getLog()).out(" Detect end communication !!!", Levels.VERBOSE);
                                     m_bRunThread = false;
-                                    clientCommand = "";
-                                }  else {
-                                    clientCommand = new String(buffer, 0, bytesRead);
-                                    
-                                    if (buffer[bytesRead-1]==10) 
-                                        if (buffer[bytesRead-2]==13) 
-                                            if (buffer[bytesRead-3]==10) 
-                                                if (buffer[bytesRead-4]==13) {
-                                                    new Debug(config.getLog()).out( " Detect end communication !!!",Levels.VERBOSE);                                                                                                      
-                                                    m_bRunThread = false;
-                                                }                                    
-                                    
                                 }
-                                new Debug(config.getLog()).out( "Readed " + clientCommand.length() + " bytes...",Levels.VERBOSE);                                                                                                      
+
+                            }
+                            new Debug(config.getLog()).out("Readed " + clientCommand.length() + " bytes...", Levels.VERBOSE);
                         } else {
                             clientCommand = in.readLine();
 
                         }
-                            
-                        
 
                     } catch (Exception ex) {
                         System.out.println(ex.getMessage());
-                        new Debug(config.getLog()).out( "Time Out, Don't detect \\n ",Levels.VERBOSE);                                                                                                                              
+                        new Debug(config.getLog()).out("Time Out, Don't detect \\n ", Levels.VERBOSE);
                         m_bRunThread = false;
 
                     }
@@ -263,13 +260,10 @@ public class Server {
                  */
                 
                 try {
-                    String code = "OK 200"; // Normal situation
-                   
+                    String code = "OK 200"; // Normal situation                   
                     
                     String return_info = ProcessPageInformation();
-                   
-
-                                      
+                                                         
                     switch (return_info) {
                         case  "404" : {
                             out.println(response("400 Bad Request", "Resorce not found!")); 
@@ -279,6 +273,11 @@ public class Server {
                          case  "500" : {
                             out.println(response("500 Internal Server Error", "Internal Server Error")); // Alwais is OK Send response to client
                             new Debug(config.getLog()).out( "500" ,Levels.VERBOSE);                             
+                            break;
+                        } 
+                        case  "403" : {
+                            out.println(response("403 Forbidden", "Forbidden")); // Alwais is OK Send response to client
+                            new Debug(config.getLog()).out( "403" ,Levels.VERBOSE);                             
                             break;
                         } 
                         default : {
@@ -363,8 +362,6 @@ public class Server {
             //TODO : debe tomar el path configurado y sacar las variables del path que llego...
             // PENDIENTE
             
-            
-           
            // Replace variables Headers and Body with values information
            Set<Map.Entry<String,String>> lparams = page.getParams().entrySet();
            for (Map.Entry<String, String> p : lparams) {
@@ -377,6 +374,31 @@ public class Server {
                response.setQuery(response.getQuery().replaceAll(h.getKey(), h.getValue()));
            }
          
+           
+            // Authorization
+            if (page.getAutorization_type().equals("Basic")) {
+                response.setQuery(response.getQuery().replaceAll("authorization_field", "'" + page.getAutorization() + "'"));
+            }
+            try {
+                if (response.getRequire_token().equals("1")) {
+                    if (page.getAutorization_type().equals("Bearer")) {
+                        String token = page.getAutorization().trim().split(" ")[1];
+                        if (!con_provider.search_token(token)) {
+                            con_provider.disconect();
+                            return "403";
+                        }
+                    } else {
+                        con_provider.disconect();
+                        return "403";
+                    }
+                }
+            } catch (Exception e) {
+                new Debug(config.getLog()).out("Error : " + e.getMessage(), Levels.ERROR);
+                con_provider.disconect();
+                return "500";
+            }
+
+           
            response.setQuery(response.getQuery().replaceAll("body", "'" + page.getBody() +"'")); // Body           
            response.setQuery(response.getQuery().replaceAll("%27", "'")); // Pone las comillas simples
            
@@ -392,6 +414,7 @@ public class Server {
             return result;
         }
 
+        
         /**
          *
          * @param code : 200 OK

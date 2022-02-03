@@ -19,41 +19,65 @@ public final class struct_page {
     private String body="";
     private String path="";
     private int step_parse=0;
+    private String autorization="";
+    private String autorization_type="";
+
     
     
     
     
-    public void parse(String info) {        
+    public void parse(String info) {
         struct_page page = new struct_page();
-        
-        if (info==null) return ;
-        
-        if (step_parse==4) {            
-            body += info;            
+
+        if (info == null) {
+            return;
         }
-        
-        
+
+        if (step_parse == 4) {
+            body += info;
+        }
+
         // Begin of body information
-        if (info.contains("Content-Length")) step_parse=4;
-         
-        // end of head information        
-        if (info.contains("Content-Type")) step_parse=3; // Dont have head information
-        
-        
-          //// Check head information
-        if (step_parse==1) {
-          
-            var header = info.split(":");
-            if (header.length>1)
-                headers.put(header[0], header[1]);
+        if (info.contains("Content-Length")) {
+            step_parse = 4;
         }
-        
-        if (info.length()>2) {
-            if (info.trim().substring(0,3).equals("GET"))     {  action="GET"; parsePath(3, info);}
-            if (info.contains("OPTIONS")) {  action="OPTIONS"; parsePath(7, info);}
-            if (info.contains("POST"))    {   action="POST"; parsePath(4, info);}
-            if (info.contains("PUT"))     {   action="PUT"; parsePath(3, info);}     
-        }            
+
+        // end of head information        
+        if (info.contains("Content-Type")) {
+            step_parse = 3; // Dont have head information
+        }
+
+        //// Check head information
+        if (step_parse == 1) {
+
+            var header = info.split(":");
+            if (header.length > 1) {
+                headers.put(header[0], header[1]);
+                if (header[0].equals("Authorization")) {
+                    autorization = header[1].trim();                    
+                    setAutorization_type(autorization.split(" ")[0]);                    
+                }
+            }
+        }
+
+        if (info.length() > 2) {
+            if (info.trim().substring(0, 3).equals("GET")) {
+                action = "GET";
+                parsePath(3, info);
+            }
+            if (info.contains("OPTIONS")) {
+                action = "OPTIONS";
+                parsePath(7, info);
+            }
+            if (info.contains("POST")) {
+                action = "POST";
+                parsePath(4, info);
+            }
+            if (info.contains("PUT")) {
+                action = "PUT";
+                parsePath(3, info);
+            }
+        }
     }
     
     
@@ -62,45 +86,43 @@ public final class struct_page {
     @Override
     public String toString() {
         String result = "";
-        result = " Action :  "+this.action + "\n";
-        result += " Path : "+this.getPath() + "\n";
-        result += " Params : "+this.params + "\n";
-        result += " Header   : "+this.headers + "\n";
-        result += " Body   : "+this.body + "\n";        
+        result = " Action :  " + this.action + "\n";
+        result += " Path : " + this.getPath() + "\n";
+        result += " Params : " + this.params + "\n";
+        result += " Header   : " + this.headers + "\n";
+        result += " Body   : " + this.body + "\n";
         return result;
     }
-    
+
     
     
     /**
-     * 
+     *
      * @param size
      * @param info
      * @return find the path
      */
     private void parsePath(int size, String info) {
-        step_parse=1;
-        
+        step_parse = 1;
+
         String parts[] = info.split(" ");
-        int findQ = parts[1].indexOf("?");        
-        if (findQ>0)
-            setPath(parts[1].substring(0, findQ));        
-        else
+        int findQ = parts[1].indexOf("?");
+        if (findQ > 0) {
+            setPath(parts[1].substring(0, findQ));
+        } else {
             setPath(parts[1]);
-        
-      String params[] = parts[1].substring(findQ+1,parts[1].length()).split("&");
-      if (params.length>0) { // Son varios parametros
-          for (int i=0;i<params.length;i++) {
-              if (params[i].contains("=")) {
-                String p[] = params[i].split("=");              
-                this.params.put(p[0],p[1]);
-              }
-          }                   
-      }
-      
-      
-      
-        
+        }
+
+        String params[] = parts[1].substring(findQ + 1, parts[1].length()).split("&");
+        if (params.length > 0) { // Son varios parametros
+            for (int i = 0; i < params.length; i++) {
+                if (params[i].contains("=")) {
+                    String p[] = params[i].split("=");
+                    this.params.put(p[0], p[1]);
+                }
+            }
+        }
+
     }
     
     
@@ -174,6 +196,36 @@ public final class struct_page {
     public void setPath(String path) {
         this.path = path;
     }
+
+    /**
+     * @return the autorization
+     */
+    public String getAutorization() {
+        return autorization;
+    }
+
+    /**
+     * @param autorization the autorization to set
+     */
+    public void setAutorization(String autorization) {
+        this.autorization = autorization;
+    }
+
+    /**
+     * @return the autorization_type
+     */
+    public String getAutorization_type() {
+        return autorization_type;
+    }
+
+    /**
+     * @param autorization_type the autorization_type to set
+     */
+    public void setAutorization_type(String autorization_type) {
+        this.autorization_type = autorization_type;
+    }
+
+    
     
     
 }

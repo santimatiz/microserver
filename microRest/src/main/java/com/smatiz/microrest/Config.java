@@ -15,7 +15,7 @@ import java.util.Properties;
  *
  * @author smatiz
  */
-public class Config {
+public final class Config {
 
     Properties config = new Properties();
     InputStream configInput = null;
@@ -40,20 +40,31 @@ public class Config {
             config.load(configInput);
             setConnectionUrl(config.getProperty("con_url"));
             setDb_user(config.getProperty("db_user"));
-            setDb_password(config.getProperty("db_password")); 
+            setDb_password(config.getProperty("db_password"));
             port = new Integer(config.getProperty("port"));
             time_out = new Integer(config.getProperty("timeout"));
-            
+
             ssl = config.getProperty("ssl").trim().equals("true");
-            TrustStore = config.getProperty("TrustStore").trim();
-            TrustStorePassword = config.getProperty("TrustStorePassword").trim();
-            KeyStorePassword = config.getProperty("KeyStorePassword").trim();
-            KeyStore = config.getProperty("KeyStore").trim();
-            log = config.getProperty("log").trim();
-            
-            
+            if (config.getProperty("ssl")==null) Debug.out(" You must configure attribute <ssl> in config file (truu|false)", Levels.ERROR);
+            if (ssl) {
+                TrustStore = config.getProperty("TrustStore").trim();
+                TrustStorePassword = config.getProperty("TrustStorePassword").trim();
+                KeyStorePassword = config.getProperty("KeyStorePassword").trim();
+                KeyStore = config.getProperty("KeyStore").trim();
+            }
+            if (config.getProperty("log") == null)
+                Debug.out(" You must configure attribute <log> in config file (VERBOSE|INFO|ERROR)", Levels.ERROR);
+            else {
+                log = config.getProperty("log").trim();
+                if (!log.equals("VERBOSE") || !log.equals("INFO") || !log.equals("ERROR")) {
+                    Debug.out(" You must configure attribute <log> in config file (VERBOSE|INFO|ERROR)", Levels.ERROR);
+                }
+            }
+             
+           
+
         } catch (IOException e) {
-            Debug.out("Error loading configuration data :"+e.getMessage(),Levels.ERROR);            
+            Debug.out("Error loading configuration data :" + e.getMessage(), Levels.ERROR);
         }
     }
 

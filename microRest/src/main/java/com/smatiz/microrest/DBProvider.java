@@ -7,6 +7,7 @@ package com.smatiz.microrest;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -98,9 +99,6 @@ public class DBProvider {
     
     
     struct_response getQuery(struct_page page)  {
-        
-        
-        
         struct_response response = new struct_response();
         if (page.getPath().length()==0) return response;
         String sql = "";
@@ -111,9 +109,9 @@ public class DBProvider {
         new Debug(config.getLog()).out("Path :"+path,Debug.Levels.VERBOSE);         
         
         if (tipo_base_datos.compareTo(type_db.mysql) == 0 ) {
-            sql = "SELECT query,path FROM microrest_restapi WHERE path = '"+page.getPath()+"' AND action='"+page.getAction()+"'";
+            sql = "SELECT query,path,required_token FROM microrest_restapi WHERE path = '"+page.getPath()+"' AND action='"+page.getAction()+"'";
        } else {
-           sql = "SELECT query,path FROM microrest.restapi WHERE path = '"+page.getPath()+"' AND action='"+page.getAction()+"'";
+           sql = "SELECT query,path,required_token FROM microrest.restapi WHERE path = '"+page.getPath()+"' AND action='"+page.getAction()+"'";
        }
         new Debug(config.getLog()).out("Sql : " + sql,Debug.Levels.VERBOSE);        
         String result = "";
@@ -124,6 +122,9 @@ public class DBProvider {
              if (rs.next()) {
                  response.setQuery(rs.getString("query"));
                  response.setPath(rs.getString("path"));
+                 if (rs.getString("required_token")!=null)
+                    response.setRequire_token(rs.getString("required_token"));
+                 
              }
 
         } catch (SQLException ex) {        
@@ -133,6 +134,33 @@ public class DBProvider {
         return response;
     }
     
+
+    public boolean search_token(String token) {
+        String sql = "";
+        boolean result = false;
+        if (tipo_base_datos.compareTo(type_db.mysql) == 0) {
+            sql = "SELECT microrest_check_token(?)";
+        } else {
+            sql = "SELECT microrest.check_token(?)";
+        }
+        try (PreparedStatement ps = con.prepareStatement(sql);) {
+            ps.setString(1, token);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                if (rs.getString(1).contains("{\"MSG\":\"OK\"}"))
+                   result = true;
+                else
+                    result = false;
+            } else {
+                result = false;
+            }
+            rs.close();
+        } catch (SQLException ex) {
+            Logger.getLogger(DBProvider.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return result;
+    }
     
 
     private void connect() {

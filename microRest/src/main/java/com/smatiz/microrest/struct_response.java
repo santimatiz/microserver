@@ -13,6 +13,7 @@ public class struct_response {
     
     private String query = "";
     private String path="";
+    private String require_token="0";
     /**
      * @return the query
      */
@@ -39,6 +40,20 @@ public class struct_response {
      */
     public void setPath(String path) {
         this.path = path;
+    }
+
+    /**
+     * @return the require_token
+     */
+    public String getRequire_token() {
+        return require_token;
+    }
+
+    /**
+     * @param require_token the require_token to set
+     */
+    public void setRequire_token(String require_token) {
+        this.require_token = require_token;
     }
   
     
