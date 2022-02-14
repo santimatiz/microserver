@@ -53,7 +53,7 @@ public final class struct_page {
             var header = info.split(":");
             if (header.length > 1) {
                 headers.put(header[0], header[1]);
-                if (header[0].equals("Authorization")) {
+                if (header[0].toUpperCase().equals("AUTHORIZATION")) {
                     autorization = header[1].trim();                    
                     setAutorization_type(autorization.split(" ")[0]);                    
                 }

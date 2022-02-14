@@ -100,7 +100,6 @@ public class Server {
     
     public void run_server() {
         ServiceThread cliThread = null;
-        
         while (ServerOn) {
             try {               
                   if (config.isSsl()) {                  
@@ -112,7 +111,12 @@ public class Server {
                 }
                 
                 lhilos.add(cliThread);
-                cliThread.start();
+                
+                
+             
+                    cliThread.start();                                     
+               
+               
                 for (int i = 0; i < lhilos.size(); i++) {
                     var h = lhilos.get(i);
                     if (h.m_bRunThread == false) {
@@ -126,6 +130,7 @@ public class Server {
                     }
 
                 }
+               
                 new Debug(config.getLog()).out("Thread  :" + lhilos.size(),Levels.VERBOSE);            
                 
 
@@ -223,9 +228,8 @@ public class Server {
 
                             }
                             new Debug(config.getLog()).out("Readed " + clientCommand.length() + " bytes...", Levels.VERBOSE);
-                        } else {
-                            clientCommand = in.readLine();
-
+                        } else {                          
+                            clientCommand = in.readLine();                           
                         }
 
                     } catch (Exception ex) {
@@ -376,8 +380,9 @@ public class Server {
          
            
             // Authorization
-            if (page.getAutorization_type().equals("Basic")) {
-                response.setQuery(response.getQuery().replaceAll("authorization_field", "'" + page.getAutorization() + "'"));
+            new Debug(config.getLog()).out("Authorization type: " + page.getAutorization_type(), Levels.VERBOSE);
+            if (page.getAutorization_type().equals("Basic")) {               
+                response.setQuery(response.getQuery().replace("authorization", "'" + page.getAutorization() + "'"));               
             }
             try {
                 if (response.getRequire_token().equals("1")) {
@@ -407,10 +412,15 @@ public class Server {
             
             if (response.getQuery().equals("")) { return "404";}
             String result = con_provider.excecuteQuery(response.getQuery());
-            
+             
+            if (result==null) { return "500";}
+               con_provider.disconect();
+               
             if (result.equals("")) { return "500";}
-            con_provider.disconect();
+               con_provider.disconect();
             
+           
+               
             return result;
         }
 
@@ -428,17 +438,18 @@ return new ResponseEntity(list.toString(), headers, HttpStatus.OK);
          */
         public String response(String code, String msg) {
             String mensaje = msg.trim().replaceAll("\n", "").replaceAll("\r", "");
-            return "HTTP/1.1 " + code + "\r\n"
-                    + "Server: MicroServer\r\n"
+            return "HTTP/1.1 " + code.trim() + "\r\n"
+                    + "Server:MicroServer\r\n"
                   //  +"ETag: \"51142bc1-7449-479b075b2891b\"\r\n" 
                   //  +"Accept-Ranges: bytes\n" 
-                    +"Content-Length: " + mensaje.length() + "\r\n"
-                    + "Access-Control-Allow-Origin : * \r\n"
-                    + "Access-Control-Allow-Methods : GET, POST, PUT \r\n"
-                    + "Access-Control-Allow-Headers: Content-Type\r\n"
-                    + "Content-Type: text/html\r\n"
+                    +"Content-Length:" + mensaje.length() + "\r\n"
+                    + "Access-Control-Allow-Origin:*\r\n"
+                    + "Access-Control-Allow-Methods:GET,POST,PUT\r\n"
+                    + "Access-Control-Allow-Headers:Content-Type\r\n"
+                    + "Content-Type:text/html\r\n"
                     + "\r\n"
-                    + mensaje;
+                   
+                    + mensaje.trim();
         }
 
         /**
