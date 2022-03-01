@@ -21,12 +21,16 @@ public final class struct_page {
     private int step_parse=0;
     private String autorization="";
     private String autorization_type="";
+    private int content_lenght=0;
 
     
     
     
     
     public void parse(String info) {
+        
+        System.out.println("Info " + info);
+        
         struct_page page = new struct_page();
 
         if (info == null) {
@@ -34,11 +38,12 @@ public final class struct_page {
         }
 
         if (step_parse == 4) {
-            body += info;
+           // body += info;
         }
 
         // Begin of body information
         if (info.contains("Content-Length")) {
+            content_lenght = Integer.parseInt(info.split(":")[1].trim());
             step_parse = 4;
         }
 
@@ -223,6 +228,20 @@ public final class struct_page {
      */
     public void setAutorization_type(String autorization_type) {
         this.autorization_type = autorization_type;
+    }
+
+    /**
+     * @return the content_lenght
+     */
+    public int getContent_lenght() {
+        return content_lenght;
+    }
+
+    /**
+     * @param content_lenght the content_lenght to set
+     */
+    public void setContent_lenght(int content_lenght) {
+        this.content_lenght = content_lenght;
     }
 
     

@@ -10,7 +10,7 @@ package com.smatiz.microrest;
  * @author smatiz
  */
 public class MicroServer {
-    final static String version = "0.4.1 build 20220203";
+    final static String version = "0.5.0 build 20220214";
     
     // 0.3.2 Resuelve inconvenientes con SSL=false
     

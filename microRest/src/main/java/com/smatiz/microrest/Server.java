@@ -99,15 +99,19 @@ public class Server {
 
     
     public void run_server() {
+        int id = 0;
         ServiceThread cliThread = null;
         while (ServerOn) {
             try {               
                   if (config.isSsl()) {                  
+                   
                     SSLSocket clientSocket = (SSLSocket) ssl_serverSocket.accept();
+                    
                     cliThread = new ServiceThread(config.getConnectionUrl(), clientSocket);
-                } else {
-                    Socket clientSocket = serverSocket.accept();
+                } else {                 
+                    Socket clientSocket = serverSocket.accept();                    
                     cliThread = new ServiceThread(config.getConnectionUrl(), clientSocket);
+
                 }
                 
                 lhilos.add(cliThread);
@@ -130,6 +134,7 @@ public class Server {
                     }
 
                 }
+                
                
                 new Debug(config.getLog()).out("Thread  :" + lhilos.size(),Levels.VERBOSE);            
                 
@@ -152,12 +157,14 @@ public class Server {
         
         boolean m_bRunThread = true;
         private String url_db = "";
-
+ 
+        
         
          ServiceThread(String url, Socket s) {
             super();
             myClientSocket = s;
             this.url_db = url;
+
         }
         
      
@@ -200,7 +207,7 @@ public class Server {
                     //System.out.println("While running...");
                     long time_elapsed = System.currentTimeMillis();
                     if ((time_elapsed - start_time) > config.getTime_out()) {
-                        new Debug(config.getLog()).out( "Process time limit , stopping...",Levels.VERBOSE);                                                  
+                        new Debug(config.getLog()).out( "Process time limit , stopping... ",Levels.VERBOSE);                                                  
                         m_bRunThread = false;
                         this.stop();
 
@@ -222,14 +229,14 @@ public class Server {
                                         && (buffer[bytesRead - 2] == 13)
                                         && (buffer[bytesRead - 3] == 10)
                                         && (buffer[bytesRead - 4] == 13)) {
-                                    new Debug(config.getLog()).out(" Detect end communication !!!", Levels.VERBOSE);
+                                    new Debug(config.getLog()).out(" Detect end communication !!! ", Levels.VERBOSE);
                                     m_bRunThread = false;
                                 }
 
                             }
                             new Debug(config.getLog()).out("Readed " + clientCommand.length() + " bytes...", Levels.VERBOSE);
-                        } else {                          
-                            clientCommand = in.readLine();                           
+                        } else {                                                
+                            clientCommand = in.readLine();                                  
                         }
 
                     } catch (Exception ex) {
@@ -246,16 +253,36 @@ public class Server {
                             if (page.getAction().equals("OPTIONS")) {
                                 ManageOptions(out);
                             } else {
-                                new Debug(config.getLog()).out( "End of client request",Levels.VERBOSE);                                                                                                                                      
+                                new Debug(config.getLog()).out( "End of client request ",Levels.VERBOSE);                                  
+                                
+                              
+                                                              
+                                if (!config.isSsl()) { // Reads Body information
+                                    char[] cchar = new char[page.getContent_lenght()];
+                                    int read = in.read(cchar, 0, page.getContent_lenght());
+                                    page.setBody(new String(cchar));
+                                }
+                                
                                 m_bRunThread = false;
+                                
                             }
                         }
                        
                         
                         getPage().parse(clientCommand);      
-                        new Debug(config.getLog()).out( "Client Says :" + clientCommand,Levels.VERBOSE);                                                                                                                                                              
+                        new Debug(config.getLog()).out( "Client Says : " + clientCommand ,Levels.VERBOSE);                                                                                                                                                              
                        
-                    } // if command!=null
+                    } else {// if command!=null
+                        new Debug(config.getLog()).out(" Null client request " , Levels.VERBOSE);
+                        m_bRunThread = false;
+                        if (in != null) {
+                            in.close();
+                        }
+                        if (out != null) {
+                            out.close();
+                        }
+                        this.stop();                        
+                    }
                 }    // While
 
                 
