@@ -57,6 +57,43 @@ ALTER TABLE microrest.restapi
 
 
 
+CREATE TABLE microrest.sync_conf
+(
+    table_name character varying(50) COLLATE pg_catalog."default" NOT NULL,
+    key_field character varying(150) COLLATE pg_catalog."default",
+    key_type character varying(100) COLLATE pg_catalog."default",
+    CONSTRAINT sync_conf_pkey PRIMARY KEY (table_name)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE microrest.sync_conf
+    OWNER to postgres;
+    
+    
+    
+    
+    
+-- Table: microrest.sync_data
+
+-- DROP TABLE microrest.sync_data;
+
+CREATE TABLE microrest.sync_data
+(
+    id bigint NOT NULL DEFAULT nextval('microrest.sinc_id_seq'::regclass),
+    table_name character varying(150) COLLATE pg_catalog."default" NOT NULL,
+    sync character(1) COLLATE pg_catalog."default" NOT NULL,
+    mode character varying(90) COLLATE pg_catalog."default",
+    key_value character varying(150) COLLATE pg_catalog."default",
+    CONSTRAINT sinc_pkey PRIMARY KEY (id)
+)
+
+TABLESPACE pg_default;    
+    
+    
+    
+    
+
 
 CREATE OR REPLACE FUNCTION microrest.check_token(
 	ptoken character varying)
@@ -137,6 +174,18 @@ $BODY$;
 
 ALTER FUNCTION microrest.create_token(character varying)
     OWNER TO postgres;
+
+
+
+
+
+
+
+
+    
+    
+
+
 
 
 
