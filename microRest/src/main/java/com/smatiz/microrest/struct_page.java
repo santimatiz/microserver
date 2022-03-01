@@ -28,9 +28,7 @@ public final class struct_page {
     
     
     public void parse(String info) {
-        
-        System.out.println("Info " + info);
-        
+
         struct_page page = new struct_page();
 
         if (info == null) {
