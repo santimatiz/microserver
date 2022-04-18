@@ -19,49 +19,66 @@ public final class Config {
 
     Properties config = new Properties();
     InputStream configInput = null;
-    
-    private  static int port = 8084;
+
+    private static int port = 8084;
     private boolean ServerOn = true;
     private int time_out = 1000;
     private String connectionUrl = "";
-    private String db_user="";
+    private String db_user = "";
     private String db_password;
-    private boolean ssl=false;
-    private String TrustStore="/programas/certs/e-compra.co.p12";
-    private String TrustStorePassword="Sonycdr74";
-    private String KeyStorePassword="Sonycdr74";
-    private String KeyStore="/programas/certs/e-compra.co.keystore";
+    private boolean ssl = false;
+    private String TrustStore = "/programas/certs/e-compra.co.p12";
+    private String TrustStorePassword = "xxxx";
+    private String KeyStorePassword = "xxxx";
+    private String KeyStore = "/programas/certs/e-compra.co.keystore";
     private String log = "";
-    
-    
+
     Config(String filename) {
+        /*
+        connectionUrl = System.getenv("DATABASE_URL");
+        setDb_user(System.getenv("DATABASE_USER"));
+        setDb_password(System.getenv("DATABASE_PASSWORD"));
+        log="VERBOSE";
+        port=80;
+        
+       if (connectionUrl!=null) {
+            Debug.out(" Configuration by enviroment variable " + connectionUrl , Levels.VERBOSE);
+            return; 
+       
+       } // HERUKU CONFIG
+         */
+
         try {
             configInput = new FileInputStream(filename);
             config.load(configInput);
-            setConnectionUrl(config.getProperty("con_url"));
-            setDb_user(config.getProperty("db_user"));
-            setDb_password(config.getProperty("db_password"));
-            port = new Integer(config.getProperty("port"));
-            time_out = new Integer(config.getProperty("timeout"));
+            setConnectionUrl(config.getProperty("con_url").trim());
+            setDb_user(config.getProperty("db_user").trim());
+            setDb_password(config.getProperty("db_password").trim());
+            if (System.getenv("PORT") != null) {
+                port = new Integer(System.getenv("PORT"));
+            } else {
+                port = new Integer(config.getProperty("port").trim());
+            }
+            time_out = new Integer(config.getProperty("timeout").trim());
 
             ssl = config.getProperty("ssl").trim().equals("true");
-            if (config.getProperty("ssl")==null) Debug.out(" You must configure attribute <ssl> in config file (truu|false)", Levels.ERROR);
+            if (config.getProperty("ssl") == null) {
+                Debug.out(" You must configure attribute <ssl> in config file (truu|false)", Levels.ERROR);
+            }
             if (ssl) {
                 TrustStore = config.getProperty("TrustStore").trim();
                 TrustStorePassword = config.getProperty("TrustStorePassword").trim();
                 KeyStorePassword = config.getProperty("KeyStorePassword").trim();
                 KeyStore = config.getProperty("KeyStore").trim();
             }
-            if (config.getProperty("log") == null)
+            if (config.getProperty("log") == null) {
                 Debug.out(" You must configure attribute <log> in config file (VERBOSE|INFO|ERROR)", Levels.ERROR);
-            else {
+            } else {
                 log = config.getProperty("log").trim();
                 if (!log.equals("VERBOSE") || !log.equals("INFO") || !log.equals("ERROR")) {
                     Debug.out(" You must configure attribute <log> in config file (VERBOSE|INFO|ERROR)", Levels.ERROR);
                 }
             }
-             
-           
 
         } catch (IOException e) {
             Debug.out("Error loading configuration data :" + e.getMessage(), Levels.ERROR);
