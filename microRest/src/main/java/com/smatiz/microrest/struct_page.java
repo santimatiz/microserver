@@ -18,6 +18,8 @@ public final class struct_page {
     private Map headers = new HashMap(); // params
     private String body="";
     private String path="";
+    private String schema="";
+    private String table="";
     private int step_parse=0;
     private String autorization="";
     private String autorization_type="";
@@ -115,6 +117,15 @@ public final class struct_page {
         } else {
             setPath(parts[1]);
         }
+
+        String[] pathParts = getPath().split("/");
+        if (pathParts.length > 3) {
+            setSchema(pathParts[3]);
+        }
+        if (pathParts.length > 4) {
+            setTable(pathParts[4]);
+        }
+
 
         String params[] = parts[1].substring(findQ + 1, parts[1].length()).split("&");
         if (params.length > 0) { // Son varios parametros
@@ -242,6 +253,43 @@ public final class struct_page {
         this.content_lenght = content_lenght;
     }
 
+    /**
+     * @return the schema
+     */
+    public String getSchema() {
+        return schema;
+    }
+
+    /**
+     * @param schema the schema to set
+     */
+    public void setSchema(String schema) {
+        this.schema = schema;
+    }
+
+    /**
+     * @return the table
+     */
+    public String getTable() {
+        return table;
+    }
+
+    /**
+     * @param table the table to set
+     */
+    public void setTable(String table) {
+        this.table = table;
+    }
+
+    public Map<String, String> getBodyAsMap() {
+        Map<String, String> map = new HashMap<>();
+        String[] pairs = body.replaceAll("[{}]", "").split(",");
+        for (String pair : pairs) {
+            String[] keyValue = pair.split("=");
+            map.put(keyValue[0].trim(), keyValue[1].trim());
+        }
+        return map;
+    }
     
     
     

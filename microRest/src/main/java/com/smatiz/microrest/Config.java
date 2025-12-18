@@ -5,11 +5,12 @@
  */
 package com.smatiz.microrest;
 
-import com.smatiz.microrest.Debug.Levels;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -17,6 +18,7 @@ import java.util.Properties;
  */
 public final class Config {
 
+    private static final Logger logger = LoggerFactory.getLogger(Config.class);
     Properties config = new Properties();
     InputStream configInput = null;
 
@@ -63,7 +65,7 @@ public final class Config {
 
             ssl = config.getProperty("ssl").trim().equals("true");
             if (config.getProperty("ssl") == null) {
-                Debug.out(" You must configure attribute <ssl> in config file (truu|false)", Levels.ERROR);
+                logger.error(" You must configure attribute <ssl> in config file (truu|false)");
             }
             if (ssl) {
                 TrustStore = config.getProperty("TrustStore").trim();
@@ -72,16 +74,16 @@ public final class Config {
                 KeyStore = config.getProperty("KeyStore").trim();
             }
             if (config.getProperty("log") == null) {
-                Debug.out(" You must configure attribute <log> in config file (VERBOSE|INFO|ERROR)", Levels.ERROR);
+                logger.error(" You must configure attribute <log> in config file (VERBOSE|INFO|ERROR)");
             } else {
                 log = config.getProperty("log").trim();
-                if (!log.equals("VERBOSE") || !log.equals("INFO") || !log.equals("ERROR")) {
-                    Debug.out(" You must configure attribute <log> in config file (VERBOSE|INFO|ERROR)", Levels.ERROR);
+                if (!log.equals("VERBOSE") && !log.equals("INFO") && !log.equals("ERROR")) {
+                    logger.error(" You must configure attribute <log> in config file (VERBOSE|INFO|ERROR)");
                 }
             }
 
         } catch (IOException e) {
-            Debug.out("Error loading configuration data :" + e.getMessage(), Levels.ERROR);
+            logger.error("Error loading configuration data :" + e.getMessage(), e);
         }
     }
 

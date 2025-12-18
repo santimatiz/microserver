@@ -5,11 +5,15 @@
  */
 package com.smatiz.microrest;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  *
  * @author smatiz
  */
 public class MicroServer {
+    private static final Logger logger = LoggerFactory.getLogger(MicroServer.class);
     final static String version = "0.5.0 build 20220214";
     
     // 0.3.2 Resuelve inconvenientes con SSL=false
@@ -21,18 +25,18 @@ public class MicroServer {
    
    
     public static void main(String[] args) {  
-        System.out.println("MicroServer - REST API "+version);
-        System.out.println("Author : Santiago Matiz V.");
-        System.out.println("https://www.intelyclick.com/microserver");
+        logger.info("MicroServer - REST API "+version);
+        logger.info("Author : Santiago Matiz V.");
+        logger.info("https://www.intelyclick.com/microserver");
         
         var url_db = "";
         if (args.length>0) {                    
             Server server = new Server(args[0]);
             server.run_server();
         } else {
-            System.out.println(" You must to specify the url DB connection to start the daemon");
-            System.out.println(" Please se the documentation of JDBC url for postgresql ");
-            System.out.println(" Example : jdbc:postgresql://localhost/MicroServer");
+            logger.error(" You must to specify the url DB connection to start the daemon");
+            logger.error(" Please se the documentation of JDBC url for postgresql ");
+            logger.error(" Example : jdbc:postgresql://localhost/MicroServer");
         }
         
         

@@ -9,17 +9,22 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.List;
+import java.util.ArrayList;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author smatiz
  */
 public class DBProvider {
-    private Connection con = null;  
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(DBProvider.class);
+    private Connection con = null;
     private boolean error=false;
     private String connectionUrl = "";
     private boolean debug = false;    
@@ -61,13 +66,15 @@ public class DBProvider {
         
         
         if (tipo_base_datos.compareTo(type_db.mysql) == 0 ) {
-            sql = "SELECT value FROM microrest_config WHERE conf='" + q + "'";
+            sql = "SELECT value FROM microrest_config WHERE conf= ?";
         } else {
-            sql = "SELECT value FROM microrest.config WHERE conf='" + q + "'";
+            sql = "SELECT value FROM microrest.config WHERE conf= ?";
         }
             
          
-        return excecuteQuery(sql);
+        List<Object> params = new ArrayList<>();
+        params.add(q);
+        return excecuteQuery(sql, params);
     }
 
 /*        
@@ -82,22 +89,58 @@ public class DBProvider {
     
     
     
-    String excecuteQuery(String query)  {     
-     String result = "";
+    String excecuteQuery(String query, List<Object> params)  {
+        StringBuilder json = new StringBuilder();
+        json.append("[");
         try (
-                Statement st  = con.createStatement();
-                ResultSet rs = st.executeQuery(query);
+                PreparedStatement st  = con.prepareStatement(query);
                 ) {
-             if (rs.next()) result= rs.getString(1);
+            for (int i = 0; i < params.size(); i++) {
+                st.setObject(i + 1, params.get(i));
+            }
+            ResultSet rs = st.executeQuery();
+            ResultSetMetaData metaData = rs.getMetaData();
+            int columnCount = metaData.getColumnCount();
+
+            while (rs.next()) {
+                json.append("{");
+                for (int i = 1; i <= columnCount; i++) {
+                    String columnName = metaData.getColumnName(i);
+                    Object value = rs.getObject(i);
+                    json.append("\"").append(columnName).append("\":\"").append(value).append("\"");
+                    if (i < columnCount) {
+                        json.append(",");
+                    }
+                }
+                json.append("}");
+                if (!rs.isLast()) {
+                    json.append(",");
+                }
+            }
     }   catch (SQLException ex) {
-            Logger.getLogger(DBProvider.class.getName()).log(Level.SEVERE, null, ex);
-            new Debug(config.getLog()).out("ERROR_EXE_QUERY : : " + ex.getMessage(),Debug.Levels.ERROR);
-            
+            logger.error("ERROR_EXE_QUERY : : " + ex.getMessage(), ex);
+            return null;
         }
-        return result;
+        json.append("]");
+        return json.toString();
     }
-    
-    
+
+    public int executeUpdate(String query, List<Object> params) {
+        int affectedRows = 0;
+        try (
+                PreparedStatement st = con.prepareStatement(query);
+        ) {
+            for (int i = 0; i < params.size(); i++) {
+                st.setObject(i + 1, params.get(i));
+            }
+            affectedRows = st.executeUpdate();
+        } catch (SQLException ex) {
+            logger.error("ERROR_EXE_UPDATE : : " + ex.getMessage(), ex);
+        }
+        return affectedRows;
+    }
+
+
     struct_response getQuery(struct_page page)  {
         struct_response response = new struct_response();
         if (page.getPath().length()==0) return response;
@@ -106,19 +149,21 @@ public class DBProvider {
         int final_pos = page.getPath().substring(1, page.getPath().length()).indexOf("/")+2;
         var path =page.getPath().substring(0, final_pos);       
         
-        new Debug(config.getLog()).out("Path :"+path,Debug.Levels.VERBOSE);         
+        logger.debug("Path :"+path);
         
         if (tipo_base_datos.compareTo(type_db.mysql) == 0 ) {
-            sql = "SELECT query,path,required_token FROM microrest_restapi WHERE path = '"+page.getPath()+"' AND action='"+page.getAction()+"'";
+            sql = "SELECT query,path,required_token FROM microrest_restapi WHERE path = ? AND action= ?";
        } else {
-           sql = "SELECT query,path,required_token FROM microrest.restapi WHERE path = '"+page.getPath()+"' AND action='"+page.getAction()+"'";
+           sql = "SELECT query,path,required_token FROM microrest.restapi WHERE path = ? AND action= ?";
        }
-        new Debug(config.getLog()).out("Sql : " + sql,Debug.Levels.VERBOSE);        
+        logger.debug("Sql : " + sql);
         String result = "";
         try (
-                Statement st  = con.createStatement();
-                ResultSet rs = st.executeQuery(sql);
+                PreparedStatement st  = con.prepareStatement(sql);
                 ) {
+            st.setString(1, page.getPath());
+            st.setString(2, page.getAction());
+            ResultSet rs = st.executeQuery();
              if (rs.next()) {
                  response.setQuery(rs.getString("query"));
                  response.setPath(rs.getString("path"));
@@ -128,8 +173,7 @@ public class DBProvider {
              }
 
         } catch (SQLException ex) {        
-            Logger.getLogger(DBProvider.class.getName()).log(Level.SEVERE, null, ex);            
-            System.out.println("ERROR_GET_QUERY");
+            logger.error("ERROR_GET_QUERY", ex);
         }
         return response;
     }
@@ -156,7 +200,7 @@ public class DBProvider {
             }
             rs.close();
         } catch (SQLException ex) {
-            Logger.getLogger(DBProvider.class.getName()).log(Level.SEVERE, null, ex);
+            logger.error("Error searching token", ex);
         }
 
         return result;
@@ -172,10 +216,8 @@ public class DBProvider {
                 Class.forName("com.mysql.cj.jdbc.Driver");                
                 setCon(DriverManager.getConnection(connectionUrl,config.getDb_user(),config.getDb_password()));
             } catch (ClassNotFoundException | SQLException e) {
-                System.out.println(" Error " + e.getMessage());
+                logger.error("Error connecting to MySQL", e);
                 setError(true);
-                System.out.println("ERROR_CON_MYSQL");
-
             }
         }
 
@@ -186,10 +228,8 @@ public class DBProvider {
                 Class.forName("org.postgresql.Driver");
                 setCon(DriverManager.getConnection(connectionUrl,config.getDb_user(),config.getDb_password()));
             } catch (ClassNotFoundException | SQLException e) {
-                System.out.println(" Error " + e.getMessage());
+                logger.error("Error connecting to PostgreSQL", e);
                 setError(true);
-                System.out.println("ERROR_CON_PG");
-
             }
         }
 

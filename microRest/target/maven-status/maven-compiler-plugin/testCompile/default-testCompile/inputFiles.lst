@@ -1,0 +1,3 @@
+/app/microRest/src/test/java/com/smatiz/microrest/ConfigTest.java
+/app/microRest/src/test/java/com/smatiz/microrest/DBProviderTest.java
+/app/microRest/src/test/java/com/smatiz/microrest/QueryGeneratorTest.java
